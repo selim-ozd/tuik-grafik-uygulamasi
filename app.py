@@ -7,14 +7,6 @@ import time
 # Sayfa ayarları
 st.set_page_config(page_title="TÜİK Nüfus Analiz Paneli", layout="wide")
 
-# CSS ile görsellik ekleyelim
-st.markdown("""
-    <style>
-    .main { background-color: #f5f7f9; }
-    .stHeader { color: #1e3a8a; }
-    </style>
-    """, unsafe_allow_view_ Wood=True)
-
 st.title("🇹🇷 TÜİK Doğum İstatistikleri Etkileşimli Paneli")
 st.markdown("---")
 
@@ -45,7 +37,7 @@ st.markdown("---")
 
 # --- BÖLÜM 2: HARİTA VE ANİMASYONLU ŞEHİR ANALİZİ ---
 st.header("2. Şehir Bazlı Derin Analiz (Harita Etkileşimli)")
-st.write("Haritadan bir şehre tıklayın; o şehrin verisinin grafikte **canlı olarak çizilmesini** izleyin.")
+st.write("Haritadan bir şehre tıklayın; o şehrin verisinin grafikte canlı olarak çizilmesini izleyin.")
 
 sehir_verileri = {
     "Sanliurfa": {"enlem": 37.1674, "boylam": 38.7939, "veriler": [4.50, 4.30, 4.00, 3.71, 3.15]},
@@ -82,8 +74,12 @@ if map_data and map_data.get("last_object_clicked"):
 with chart_col:
     chart_placeholder = st.empty() # Animasyon için boş alan
     
-    # Başlangıç verisi (Sadece Türkiye ortalaması)
-    base_df = pd.DataFrame({'Yıl': yillar, 'Türkiye Ortalaması': turkiye_gercek})
+    # Başlangıç verisi (Türkiye ortalaması ve Yenilenme Eşiği)
+    base_df = pd.DataFrame({
+        'Yıl': yillar, 
+        'Türkiye Ortalaması': turkiye_gercek,
+        'Yenilenme Eşiği (2.10)': [2.10] * 5
+    })
     
     if selected_city:
         st.success(f"📍 {selected_city} seçildi. Veri yükleniyor...")
