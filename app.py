@@ -117,10 +117,17 @@ with col_eu2:
     ulke_hizi = ab_verileri[secilen_ulke]
     st.metric(f"{secilen_ulke} Hızı", ulke_hizi)
 
-# Kıyaslama Grafiği
+# Kıyaslama Grafiği (Güncellenmiş İnce Sütunlar ve Temizlenmiş Veri)
 st.subheader("Kıyaslama Grafiği")
+
 kiyas_df = pd.DataFrame({
-    'Ülke': ["Türkiye", secilen_ulke, "Yenilenme Eşiği"],
-    'Hız': [1.42, ulke_hizi, 2.10]
+    'Ülke': ["Türkiye", secilen_ulke],
+    'Doğurganlık Hızı': [1.42, ulke_hizi]
 })
-st.bar_chart(kiyas_df.set_index('Ülke'))
+
+# İnce sütunlar elde etmek için alta boş sütunlar ekleyerek alanı daraltıyoruz
+grafik_sol, grafik_orta, grafik_sag = st.columns([1, 2, 1])
+
+with grafik_orta:
+    # Yenilenme eşiği sütunlardan kalktı, grafik sadece Türkiye ve seçilen ülkeyi içeriyor
+    st.bar_chart(kiyas_df.set_index('Ülke'), y="Doğurganlık Hızı")
