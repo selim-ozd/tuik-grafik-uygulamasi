@@ -4,40 +4,52 @@ import folium
 from streamlit_folium import st_folium
 import time
 
-# Sayfa ayarları
-st.set_page_config(page_title="TÜİK Nüfus Analiz Paneli", layout="wide")
+# Sayfa Genişlik Ayarı
+st.set_page_config(page_title="TÜİK Nüfus ve AB Kıyaslama Paneli", layout="wide")
 
-st.title("🇹🇷 TÜİK Doğum İstatistikleri Etkileşimli Paneli")
+# --- OYUN HAFIZASI (Session State) ---
+if 'game_guess' not in st.session_state:
+    st.session_state.game_guess = 1.42 # Başlangıç değeri (2025 verisi)
+if 'game_history' not in st.session_state:
+    st.session_state.game_history = []
+
+st.title("🇹🇷 TÜİK Doğum İstatistikleri ve AB Kıyaslama Portalı")
 st.markdown("---")
 
-# --- BÖLÜM 1: GENEL SİMÜLASYON (SLIDER) ---
-st.header("1. Türkiye Geneli Gelecek Simülasyonu")
-col1, col2 = st.columns([1, 2])
+# --- BÖLÜM 1: 2026 TAHMİN OYUNU ---
+st.header("1. Hedef 1.62: 2026 Doğurganlık Hızı Tahmin Oyunu")
+st.write("Türkiye'nin 2026 yılında doğurganlık hızının kaç olacağını tahmin edin. İpucu: Hedefimiz 1.62!")
 
-with col1:
-    st.write("Aşağıdaki sürgüyü kullanarak 2025 yılı için bir doğurganlık hızı belirleyin ve Türkiye trendine etkisini görün.")
-    tahmin_hiz = st.slider("2025 Hedef Hızı Seçin:", 1.0, 3.0, 1.42, 0.01)
+col_game1, col_game2 = st.columns([1, 2])
 
-# Veri Hazırlama
-yillar = [2001, 2010, 2015, 2020, 2025]
-turkiye_gercek = [2.38, 2.08, 2.15, 1.71, 1.42]
-simulasyon_verisi = [2.38, 2.08, 2.15, 1.71, tahmin_hiz]
+with col_game1:
+    user_guess = st.number_input("Tahmininizi Girin (Örn: 1.55):", min_value=1.0, max_value=3.0, value=st.session_state.game_guess, step=0.01)
+    
+    if st.button("Tahmini Kontrol Et"):
+        st.session_state.game_guess = user_guess
+        st.session_state.game_history.append(user_guess)
+        
+        if user_guess < 1.62:
+            st.warning("🔼 Biraz daha yukarı! Türkiye'nin daha çok bebeğe ihtiyacı var.")
+        elif user_guess > 1.62:
+            st.warning("🔽 Biraz daha aşağı! Tahmininiz hedefin üzerinde.")
+        else:
+            st.balloons()
+            st.success("🎯 Tebrikler! 1.62 hedefini tam isabetle buldunuz!")
 
-df_sim = pd.DataFrame({
-    'Yıl': yillar,
-    'Mevcut Trend': turkiye_gercek,
-    'Sizin Simülasyonunuz': simulasyon_verisi,
-    'Yenilenme Eşiği (2.10)': [2.10] * 5
-})
-
-with col2:
-    st.line_chart(df_sim.set_index('Yıl'))
+with col_game2:
+    # Grafik hazırlığı
+    yillar_game = [2020, 2025, 2026]
+    veriler_game = [1.71, 1.42, user_guess]
+    df_game = pd.DataFrame({'Yıl': yillar_game, 'Tahmin Trendi': veriler_game})
+    st.line_chart(df_game.set_index('Yıl'))
+    st.caption("Grafikte 2026 noktası sizin girdiğiniz tahmine göre anlık değişir.")
 
 st.markdown("---")
 
 # --- BÖLÜM 2: HARİTA VE ANİMASYONLU ŞEHİR ANALİZİ ---
 st.header("2. Şehir Bazlı Derin Analiz (Harita Etkileşimli)")
-st.write("Haritadan bir şehre tıklayın; o şehrin verisinin grafikte canlı olarak çizilmesini izleyin.")
+st.write("Haritadan bir şehre tıklayın; verinin grafikte canlı olarak çizilmesini izleyin.")
 
 sehir_verileri = {
     "Sanliurfa": {"enlem": 37.1674, "boylam": 38.7939, "veriler": [4.50, 4.30, 4.00, 3.71, 3.15]},
@@ -47,6 +59,8 @@ sehir_verileri = {
     "Izmir": {"enlem": 38.4237, "boylam": 27.1428, "veriler": [1.85, 1.75, 1.65, 1.40, 1.22]},
     "Bartin": {"enlem": 41.6344, "boylam": 32.3375, "veriler": [1.75, 1.65, 1.55, 1.35, 1.09]}
 }
+yillar_main = [2001, 2010, 2015, 2020, 2025]
+turkiye_gercek = [2.38, 2.08, 2.15, 1.71, 1.42]
 
 map_col, chart_col = st.columns([1.2, 1])
 
@@ -54,16 +68,9 @@ with map_col:
     m = folium.Map(location=[39.0, 35.2], zoom_start=6)
     for sehir, bilgi in sehir_verileri.items():
         renk = "green" if bilgi["veriler"][-1] >= 2.10 else "red"
-        folium.Marker(
-            location=[bilgi["enlem"], bilgi["boylam"]],
-            popup=f"{sehir}: {bilgi['veriler'][-1]}",
-            tooltip=sehir,
-            icon=folium.Icon(color=renk, icon="info-sign")
-        ).add_to(m)
-    
-    map_data = st_folium(m, width=650, height=450)
+        folium.Marker(location=[bilgi["enlem"], bilgi["boylam"]], tooltip=sehir, icon=folium.Icon(color=renk)).add_to(m)
+    map_data = st_folium(m, width=650, height=400)
 
-# Tıklanan şehri bulma
 selected_city = None
 if map_data and map_data.get("last_object_clicked"):
     lat, lng = map_data["last_object_clicked"]["lat"], map_data["last_object_clicked"]["lng"]
@@ -72,29 +79,48 @@ if map_data and map_data.get("last_object_clicked"):
             selected_city = s
 
 with chart_col:
-    chart_placeholder = st.empty() # Animasyon için boş alan
-    
-    # Başlangıç verisi (Türkiye ortalaması ve Yenilenme Eşiği)
-    base_df = pd.DataFrame({
-        'Yıl': yillar, 
-        'Türkiye Ortalaması': turkiye_gercek,
-        'Yenilenme Eşiği (2.10)': [2.10] * 5
-    })
-    
+    chart_placeholder = st.empty()
+    base_df = pd.DataFrame({'Yıl': yillar_main, 'Türkiye Ortalaması': turkiye_gercek})
     if selected_city:
-        st.success(f"📍 {selected_city} seçildi. Veri yükleniyor...")
-        city_full_data = sehir_verileri[selected_city]["veriler"]
-        
-        # ANİMASYON DÖNGÜSÜ: Çizgiyi adım adım çiziyoruz
-        for i in range(1, len(yillar) + 1):
+        city_data = sehir_verileri[selected_city]["veriler"]
+        for i in range(1, len(yillar_main) + 1):
             temp_df = base_df.copy()
-            # Şehrin sadece i. yıla kadar olan kısmını ekle, gerisini None yap
-            temp_df[selected_city] = city_full_data[:i] + [None] * (len(yillar) - i)
-            
-            # Grafiği güncelle
+            temp_df[selected_city] = city_data[:i] + [None] * (len(yillar_main) - i)
             chart_placeholder.line_chart(temp_df.set_index('Yıl'))
-            time.sleep(0.15) # Çizim hızı (saniye)
-            
+            time.sleep(0.1)
     else:
         chart_placeholder.line_chart(base_df.set_index('Yıl'))
-        st.info("İstatistiklerini çizdirmek için haritadan bir şehre tıklayın.")
+
+st.markdown("---")
+
+# --- BÖLÜM 3: AVRUPA BİRLİĞİ KIYASLAMASI ---
+st.header("3. Türkiye vs Avrupa Birliği (2024 Karşılaştırması)")
+st.write("Sol tarafta Türkiye sabit. Sağ taraftan bir AB üyesi seçerek kıyaslayın.")
+
+# AB Verileri (Yaklaşık 2024 Değerleri)
+ab_verileri = {
+    "Fransa": 1.79, "Ispanya": 1.16, "Italya": 1.24, "Almanya": 1.36, 
+    "Polonya": 1.26, "Yunanistan": 1.32, "Isvreç": 1.39, "Hollanda": 1.49,
+    "Danimarka": 1.55, "Irlanda": 1.54
+}
+
+col_eu1, col_eu2 = st.columns(2)
+
+with col_eu1:
+    st.subheader("🇹🇷 Türkiye")
+    st.metric("Doğurganlık Hızı", "1.42")
+    st.write("Türkiye şu an AB ortalamasına yakın ancak yenilenme eşiğinin (2.10) altında.")
+
+with col_eu2:
+    st.subheader("🇪🇺 AB Üyesi Seçin")
+    secilen_ulke = st.selectbox("Kıyaslamak istediğiniz ülkeyi seçin:", list(ab_verileri.keys()))
+    ulke_hizi = ab_verileri[secilen_ulke]
+    st.metric(f"{secilen_ulke} Hızı", ulke_hizi)
+
+# Kıyaslama Grafiği
+st.subheader("Kıyaslama Grafiği")
+kiyas_df = pd.DataFrame({
+    'Ülke': ["Türkiye", secilen_ulke, "Yenilenme Eşiği"],
+    'Hız': [1.42, ulke_hizi, 2.10]
+})
+st.bar_chart(kiyas_df.set_index('Ülke'))
