@@ -117,17 +117,21 @@ with col_eu2:
     ulke_hizi = ab_verileri[secilen_ulke]
     st.metric(f"{secilen_ulke} Hızı", ulke_hizi)
 
-# Kıyaslama Grafiği (Güncellenmiş İnce Sütunlar ve Temizlenmiş Veri)
+# Kıyaslama Grafiği (Yenilenme Eşiği Yeniden Eklendi ve Açıklama Alanı Düzenlendi)
 st.subheader("Kıyaslama Grafiği")
 
 kiyas_df = pd.DataFrame({
-    'Ülke': ["Türkiye", secilen_ulke],
-    'Doğurganlık Hızı': [1.42, ulke_hizi]
+    'Ülke': ["Türkiye", secilen_ulke, "Yenilenme Eşiği"],
+    'Doğurganlık Hızı': [1.42, ulke_hizi, 2.10]
 })
 
-# İnce sütunlar elde etmek için alta boş sütunlar ekleyerek alanı daraltıyoruz
+# Sütunları daha ince ve estetik göstermek için alanı daraltıyoruz
 grafik_sol, grafik_orta, grafik_sag = st.columns([1, 2, 1])
 
 with grafik_orta:
-    # Yenilenme eşiği sütunlardan kalktı, grafik sadece Türkiye ve seçilen ülkeyi içeriyor
     st.bar_chart(kiyas_df.set_index('Ülke'), y="Doğurganlık Hızı")
+
+# Yenilenme Eşiği Bilgi Notu (Eklenti Açıklama)
+st.caption("""
+ℹ️ **Nüfusun Yenilenme Eşiği (2.10):** Bir ülkedeki nüfusun yapısal olarak azalmadan veya artmadan, sabit ve dengede kalabilmesi için kadın başına düşen ortalama doğum oranıdır. Çocuk ölümleri ve doğal cinsiyet dengesi sebebiyle bu oran tam olarak 2.10 kabul edilir.
+""")
